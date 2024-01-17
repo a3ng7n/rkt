@@ -29,10 +29,10 @@ Adafruit_BMP280 bmp; // I2C
 //Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 
 void setup() {
-  while (!Serial) {
-    // wait for Arduino Serial Monitor to be ready
-    delay(1000);
-  }
+  // while (!Serial) {
+  //   // wait for Arduino Serial Monitor to be ready
+  //   delay(1000);
+  // }
 
   // initialize SX1276 with default settings
   Serial.print(F("[SX1276] Initializing ... "));
@@ -54,10 +54,10 @@ void setup() {
   }
 
   myGNSS.setI2COutput(COM_TYPE_UBX | COM_TYPE_NMEA); //Set the I2C port to output both NMEA and UBX messages
-  // myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
+  myGNSS.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); //Save (only) the communications port settings to flash and BBR
   myGNSS.setProcessNMEAMask(SFE_UBLOX_FILTER_NMEA_ALL);
   //This will pipe all NMEA sentences to the serial port so we can see them
-  myGNSS.setNMEAOutputPort(Serial);
+  // myGNSS.setNMEAOutputPort(Serial);
 
 
   /* I2C bus,  0x68 address */
@@ -94,30 +94,30 @@ int count = 0;
 
 void loop() {
   /* Check if data read */
-  // if (imu.Read()) {
-  //   Serial.print(imu.new_imu_data());
-  //   Serial.print("\t Accel x: ");
-  //   Serial.print(imu.accel_x_mps2());
-  //   Serial.print("\t Accel y: ");
-  //   Serial.print(imu.accel_y_mps2());
-  //   Serial.print("\t Accel z: ");
-  //   Serial.print(imu.accel_z_mps2());
-  //   Serial.print("\t Rate x: ");
-  //   Serial.print(imu.gyro_x_radps());
-  //   Serial.print("\t Rate y: ");
-  //   Serial.print(imu.gyro_y_radps());
-  //   Serial.print("\t Rate z: ");
-  //   Serial.print(imu.gyro_z_radps());
-  //   Serial.print("\t");
-  //   Serial.print(imu.die_temp_c());
-  //   Serial.print("\n");
-  // }
 
   //Query module only every second. Doing it more often will just cause I2C traffic.
   //The module only responds when a new position is available
   if (millis() - lastTime > 1000)
   {
     lastTime = millis(); //Update the timer
+    if (imu.Read()) {
+      Serial.print(imu.new_imu_data());
+      Serial.print("\t Accel x: ");
+      Serial.print(imu.accel_x_mps2());
+      Serial.print("\t Accel y: ");
+      Serial.print(imu.accel_y_mps2());
+      Serial.print("\t Accel z: ");
+      Serial.print(imu.accel_z_mps2());
+      Serial.print("\t Rate x: ");
+      Serial.print(imu.gyro_x_radps());
+      Serial.print("\t Rate y: ");
+      Serial.print(imu.gyro_y_radps());
+      Serial.print("\t Rate z: ");
+      Serial.print(imu.gyro_z_radps());
+      Serial.print("\t");
+      Serial.print(imu.die_temp_c());
+      Serial.print("\n");
+    }
     
     long latitude = myGNSS.getLatitude();
     Serial.print(F("Lat: "));
@@ -148,6 +148,17 @@ void loop() {
     else if (RTK == 2) Serial.print(F(" (High precision fix)"));
 
     Serial.println();
+    Serial.print(F("Temperature = "));
+    Serial.print(bmp.readTemperature());
+    Serial.println(" *C");
+
+    Serial.print(F("Pressure = "));
+    Serial.print(bmp.readPressure());
+    Serial.println(" Pa");
+
+    Serial.print(F("Approx altitude = "));
+    Serial.print(bmp.readAltitude(1013.25)); /* Adjusted to local forecast! */
+    Serial.println(" m");
     
     Serial.print(F("[SX1276] Transmitting packet ... "));
 
@@ -155,7 +166,7 @@ void loop() {
     // 255 characters long
     count++;
     if (count > 255) count = 0;
-    String str = "Hello World! #" + String(count++);
+    String str = String(latitude) + "," + String(longitude) + "," + String(count++);
     int state = radio.transmit(str);
 
     // you can also transmit byte array up to 256 bytes long
@@ -188,16 +199,5 @@ void loop() {
 
     }
 
-    Serial.print(F("Temperature = "));
-    Serial.print(bmp.readTemperature());
-    Serial.println(" *C");
-
-    Serial.print(F("Pressure = "));
-    Serial.print(bmp.readPressure());
-    Serial.println(" Pa");
-
-    Serial.print(F("Approx altitude = "));
-    Serial.print(bmp.readAltitude(1013.25)); /* Adjusted to local forecast! */
-    Serial.println(" m");
   }
 }
